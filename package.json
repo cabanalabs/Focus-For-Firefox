@@ -1,0 +1,13 @@
+{
+  "title": "Focus",
+  "name": "focus",
+  "version": "0.0.1",
+  "description": "Focus breaks bad habits by showing you a beautiful reminder page whenever you type in your favorite distracting websites.",
+  "main": "index.js",
+  "author": "Cabana Labs",
+  "engines": {
+    "firefox": ">=38.0a1",
+    "fennec": ">=38.0a1"
+  },
+  "license": "MIT"
+}
