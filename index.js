@@ -1,21 +1,21 @@
 var self = require('sdk/self');
-var {Cc, Ci,Cu} = require("chrome");
-var {XPCOMUtils} = Cu.import("resource://gre/modules/XPCOMUtils.jsm");
+const { viewFor } = require('sdk/view/core');
+const { Class } = require('sdk/core/heritage');
+const { Unknown } = require('sdk/platform/xpcom');
+var { browserWindows: windows } = require("sdk/windows");
 
-var windows = require("sdk/windows").browserWindows;
-var listener = {
+var Listener = Class({
+    extends: Unknown,
+    interfaces: ["nsIWebProgressListener",
+                 "nsISupportsWeakReference"],
     oldURL: null,
     processNewURL: function(aURI) {
         if (aURI.spec == this.oldURL) return;
 
         // now we know the url is new...
-        alert(aURI.spec);
+        console.log(aURI.spec);
         this.oldURL = aURI.spec;
     },
-
-    // nsIWebProgressListener
-    QueryInterface: XPCOMUtils.generateQI(["nsIWebProgressListener",
-                                           "nsISupportsWeakReference"]),
 
     onLocationChange: function(aProgress, aRequest, aURI) {
         this.processNewURL(aURI);
@@ -25,10 +25,14 @@ var listener = {
     onProgressChange: function() {},
     onStatusChange: function() {},
     onSecurityChange: function() {}
-};
+});
+
+var listener = Listener();
+
+//TODO attach to existing windows
 windows.on('open', function(window) {
-  gBrowser.addProgressListener(listener);
+  viewFor(window).gBrowser.addProgressListener(listener);
 });
 windows.on('close', function(window) {
-  gBrowser.removeProgressListener(listener);
+  viewFor(window).gBrowser.removeProgressListener(listener);
 });
