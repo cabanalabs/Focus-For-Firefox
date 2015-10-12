@@ -1,9 +1,34 @@
 var self = require('sdk/self');
+var {Cc, Ci,Cu} = require("chrome");
+var {XPCOMUtils} = Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-// a dummy function, to show how tests work.
-// to see how to test this function, look at test/test-index.js
-function dummy(text, callback) {
-  callback(text);
-}
+var windows = require("sdk/windows").browserWindows;
+var listener = {
+    oldURL: null,
+    processNewURL: function(aURI) {
+        if (aURI.spec == this.oldURL) return;
 
-exports.dummy = dummy;
+        // now we know the url is new...
+        alert(aURI.spec);
+        this.oldURL = aURI.spec;
+    },
+
+    // nsIWebProgressListener
+    QueryInterface: XPCOMUtils.generateQI(["nsIWebProgressListener",
+                                           "nsISupportsWeakReference"]),
+
+    onLocationChange: function(aProgress, aRequest, aURI) {
+        this.processNewURL(aURI);
+    },
+
+    onStateChange: function() {},
+    onProgressChange: function() {},
+    onStatusChange: function() {},
+    onSecurityChange: function() {}
+};
+windows.on('open', function(window) {
+  gBrowser.addProgressListener(listener);
+});
+windows.on('close', function(window) {
+  gBrowser.removeProgressListener(listener);
+});
