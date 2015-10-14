@@ -9,16 +9,22 @@ var Listener = Class({
     interfaces: ["nsIWebProgressListener",
                  "nsISupportsWeakReference"],
     oldURL: null,
-    processNewURL: function(aURI) {
+    processNewURL: function(aProgress, aRequest, aURI) {
         if (aURI.spec == this.oldURL) return;
 
         // now we know the url is new...
-        console.log(aURI.spec);
+        console.log(aURI.spec+' -- '+aURI.host);
+        if (aURI.host == 'dot429.com') {
+          // Get current window or tab
+          console.log('ok -- '+this);
+          viewFor(window).gBrowser.selectedTab.url = 'http://cabanalabs.com';
+          console.log('done');
+        }
         this.oldURL = aURI.spec;
     },
 
     onLocationChange: function(aProgress, aRequest, aURI) {
-        this.processNewURL(aURI);
+        this.processNewURL(aProgress, aRequest, aURI);
     },
 
     onStateChange: function() {},
