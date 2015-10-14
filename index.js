@@ -1,44 +1,36 @@
-var self = require('sdk/self');
-const { viewFor } = require('sdk/view/core');
-const { Class } = require('sdk/core/heritage');
-const { Unknown } = require('sdk/platform/xpcom');
-var { browserWindows: windows } = require("sdk/windows");
+var {Cc, Ci} = require("chrome");
+var utils = require('sdk/window/utils');
+var httpRequestObserver =
+{
+  observe: function(subject, topic, data)
+  {
+    if (topic == "http-on-modify-request") {
+      var httpChannel = subject.QueryInterface(Ci.nsIHttpChannel);
+      var host = subject.URI.host;
+      if (subject.URI.host == 'dot429.com') {
+        var gBrowser = utils.getMostRecentBrowserWindow().gBrowser;
+        var domWin = httpChannel.notificationCallbacks.getInterface(Ci.nsIDOMWindow);
+        var browser = gBrowser.getBrowserForDocument(domWin.top.document);
+        // Very important to pass the string and *not* the URI object
+        browser.loadURI('http://www.cabanalabs.com/', null, null);
+      }
+    }
+  },
 
-var Listener = Class({
-    extends: Unknown,
-    interfaces: ["nsIWebProgressListener",
-                 "nsISupportsWeakReference"],
-    oldURL: null,
-    processNewURL: function(aProgress, aRequest, aURI) {
-        if (aURI.spec == this.oldURL) return;
+  get observerService() {
+    return Cc["@mozilla.org/observer-service;1"]
+                     .getService(Ci.nsIObserverService);
+  },
 
-        // now we know the url is new...
-        console.log(aURI.spec+' -- '+aURI.host);
-        if (aURI.host == 'dot429.com') {
-          // Get current window or tab
-          console.log('ok -- '+this);
-          viewFor(window).gBrowser.selectedTab.url = 'http://cabanalabs.com';
-          console.log('done');
-        }
-        this.oldURL = aURI.spec;
-    },
+  register: function()
+  {
+    this.observerService.addObserver(this, "http-on-modify-request", false);
+  },
 
-    onLocationChange: function(aProgress, aRequest, aURI) {
-        this.processNewURL(aProgress, aRequest, aURI);
-    },
+  unregister: function()
+  {
+    this.observerService.removeObserver(this, "http-on-modify-request");
+  }
+};
 
-    onStateChange: function() {},
-    onProgressChange: function() {},
-    onStatusChange: function() {},
-    onSecurityChange: function() {}
-});
-
-var listener = Listener();
-
-//TODO attach to existing windows
-windows.on('open', function(window) {
-  viewFor(window).gBrowser.addProgressListener(listener);
-});
-windows.on('close', function(window) {
-  viewFor(window).gBrowser.removeProgressListener(listener);
-});
+httpRequestObserver.register();
