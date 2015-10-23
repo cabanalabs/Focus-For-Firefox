@@ -1,0 +1,19 @@
+#wrapper {
+  overflow-x: hidden;
+  overflow-y: scroll;
+  height: 200px;
+  margin-bottom: 5px;
+  border:1px solid;
+}
+#sitelist {
+  border: 0px;
+  width: 290px;
+  min-height:10000px;
+  resize: vertical;
+  scroll-x: none;
+  scroll-y: none;
+  background-image: url("textback.png");
+  line-height:25px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
