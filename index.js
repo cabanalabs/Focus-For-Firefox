@@ -8,7 +8,6 @@ var httpRequestObserver =
       var httpChannel = subject.QueryInterface(Ci.nsIHttpChannel);
       var host = subject.URI.host;
       // Load and concat blockList
-      console.log(ss.storage.blockList);
       var blockList = ss.storage.blockList.replace(/\r/g, "\n").replace(/' '/g,"").replace(/\n\n/g,"\n").split("\n");
       for (var counter=0; counter < blockList.length; counter++) {
         if (subject.URI.host.indexOf(blockList[counter]) > -1) {
