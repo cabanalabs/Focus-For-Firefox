@@ -1,5 +1,7 @@
 var {Cc, Ci} = require("chrome");
 var utils = require('sdk/window/utils');
+
+// Intercept and redirect requests here
 var httpRequestObserver =
 {
   observe: function(subject, topic, data)
@@ -7,10 +9,13 @@ var httpRequestObserver =
     if (topic == "http-on-modify-request") {
       var httpChannel = subject.QueryInterface(Ci.nsIHttpChannel);
       var host = subject.URI.host;
-      // Load and concat blockList
-      var blockList = ss.storage.blockList.replace(/\r/g, "\n").replace(/' '/g,"").replace(/\n\n/g,"\n").split("\n");
+      // Load, and clean up blocklist
+      var blockList = ss.storage.blockList
+                        .replace(/^#.*\n$/g, "")
+                        .split("\n");
       for (var counter=0; counter < blockList.length; counter++) {
-        if (subject.URI.host.indexOf(blockList[counter]) > -1) {
+        var listItem = blockList[counter].trim();
+        if (listItem != '' && subject.URI.host.indexOf(listItem) > -1) {
           var gBrowser = utils.getMostRecentBrowserWindow().gBrowser;
           var domWin = httpChannel.notificationCallbacks.getInterface(Ci.nsIDOMWindow);
           var browser = gBrowser.getBrowserForDocument(domWin.top.document);
@@ -40,7 +45,7 @@ var httpRequestObserver =
 
 httpRequestObserver.register();
 
-// Menu Button
+// Handle menu button
 var { ToggleButton } = require('sdk/ui/button/toggle');
 var panels = require("sdk/panel");
 var ss = require("sdk/simple-storage");
@@ -63,6 +68,7 @@ var button = ToggleButton({
   }
 });
 
+// Blocklist
 var panel = panels.Panel({
   contentURL: self.data.url('panel.html'),
   contentStyleFile: self.data.url('panel.css'),
@@ -81,7 +87,7 @@ var panel = panels.Panel({
       case 'saveBlockList':
         ss.storage.blockList = message.value;
         panel.hide();
-      case 'cancelSave':
+      case 'undoSave':
         panel.postMessage({
           'method': 'loadBlockList',
           'value': ss.storage.blockList || ''
@@ -93,6 +99,7 @@ var panel = panels.Panel({
 /*
 TODO:
   Browser Plugin:
+    - Use the plugin the load remote images and produce the whole page locally?
     - Setup an on / off listener for:
       https://developer.mozilla.org/en-US/Add-ons/SDK/High-Level_APIs/simple-prefs#on%28prefName_listener%29
     - Display browser plugin according to state
@@ -100,12 +107,9 @@ TODO:
     - When the panel loads, get the current settings for
       the current page / as well as plugin state
     
-    - Make sure that the only requests being redirected 
-      are those that are typed into the browser
-    - Build interface to add lists of blocked sites
-    - Test with different kinds of domains
     - Redirect to focus.cabanalabs.com/focus
     - Opt in for Private Browsing in addon settings
+    - Always make sure that whatever wallpaper you get, it is appropriate for most sizes.
   
   Front-end:
     - Make the clock it's own module
@@ -128,5 +132,4 @@ TODO:
 - Edit list of blocked websites
 - Show motivational quote - maybe get a database of 200 quotes
 - Show the current awesome picture of focus.cabanalabs.com
-
 */
