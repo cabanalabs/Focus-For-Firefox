@@ -1,21 +1,29 @@
 var {Cc, Ci} = require("chrome");
 var utils = require('sdk/window/utils');
+var rawBlockList = '';
+var blockList = '';
+
+// Load the blocklist
+var ss = require("sdk/simple-storage");
+var pluginState = ss.storage.pluginState || 'ON';
+var reloadBlockList = function() {
+  rawBlockList = (ss.storage.rawBlockList || '')
+  blockList = rawBlockList.replace(/^#.*\n$/g, "").split("\n");
+}
 
 // Intercept and redirect requests here
 var httpRequestObserver =
 {
   observe: function(subject, topic, data)
   {
-    if (topic == "http-on-modify-request") {
-      var httpChannel = subject.QueryInterface(Ci.nsIHttpChannel);
-      var host = subject.URI.host;
+    // If referrer is null, that means this request was most likely triggered by the
+    // user typing the url into the address bar and pressing enter
+    if (pluginState == 'ON' && topic == "http-on-modify-request" && subject.nsIHttpChannel.referrer == null) {
       // Load, and clean up blocklist
-      var blockList = ss.storage.blockList
-                        .replace(/^#.*\n$/g, "")
-                        .split("\n");
       for (var counter=0; counter < blockList.length; counter++) {
         var listItem = blockList[counter].trim();
         if (listItem != '' && subject.URI.host.indexOf(listItem) > -1) {
+          var httpChannel = subject.QueryInterface(Ci.nsIHttpChannel);
           var gBrowser = utils.getMostRecentBrowserWindow().gBrowser;
           var domWin = httpChannel.notificationCallbacks.getInterface(Ci.nsIDOMWindow);
           var browser = gBrowser.getBrowserForDocument(domWin.top.document);
@@ -27,28 +35,25 @@ var httpRequestObserver =
     }
   },
 
-  get observerService() {
+  observerService: function() {
     return Cc["@mozilla.org/observer-service;1"]
                      .getService(Ci.nsIObserverService);
   },
 
   register: function()
   {
-    this.observerService.addObserver(this, "http-on-modify-request", false);
+    this.observerService().addObserver(this, "http-on-modify-request", false);
   },
 
   unregister: function()
   {
-    this.observerService.removeObserver(this, "http-on-modify-request");
+    this.observerService().removeObserver(this, "http-on-modify-request");
   }
 };
-
-httpRequestObserver.register();
 
 // Handle menu button
 var { ToggleButton } = require('sdk/ui/button/toggle');
 var panels = require("sdk/panel");
-var ss = require("sdk/simple-storage");
 var self = require("sdk/self");
 
 var button = ToggleButton({
@@ -68,15 +73,20 @@ var button = ToggleButton({
   }
 });
 
-// Blocklist
+// Panel Interaction
 var panel = panels.Panel({
   contentURL: self.data.url('panel.html'),
   contentStyleFile: self.data.url('panel.css'),
   contentScriptFile: self.data.url('panel.js'),
+  // Initialize Panel with state and information
   onShow: function() {
     panel.postMessage({
       'method': 'loadBlockList',
-      'value': ss.storage.blockList || ''
+      'value': rawBlockList
+    });
+    panel.postMessage({
+      'method': 'togglePlugin',
+      'value': ss.storage.pluginState || 'ON'
     });
   },
   onHide: function() {
@@ -85,16 +95,38 @@ var panel = panels.Panel({
   onMessage: function(message) {
     switch (message.method) {
       case 'saveBlockList':
-        ss.storage.blockList = message.value;
+        ss.storage.rawBlockList = message.value;
+        reloadBlockList();
         panel.hide();
+        break;
       case 'undoSave':
         panel.postMessage({
           'method': 'loadBlockList',
-          'value': ss.storage.blockList || ''
+          'value': rawBlockList
         });
+        break;
+      case 'togglePlugin':
+        pluginState = (message.value === true) ? 'ON' : 'OFF';
+        ss.storage.pluginState = pluginState;
+        panel.postMessage({
+          'method': 'togglePlugin',
+          'value': pluginState
+        });
+        break;
     }
   }
 });
+
+// Start here
+exports.main = function(options, callbacks) {
+  reloadBlockList();
+  httpRequestObserver.register();
+}
+
+// Unload upon upgrade / plugin being disabled etc.
+exports.onUnload = function(reason) {
+  httpRequestObserver.unregister(); 
+}
 
 /*
 TODO:
@@ -113,6 +145,7 @@ TODO:
   
   Front-end:
     - Make the clock it's own module
+    - Don't show the clock until it has the time
     - Make image into a module
     - Save image to local storage
 
