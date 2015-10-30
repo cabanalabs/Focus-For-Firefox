@@ -1,4 +1,6 @@
 (function() {
+  var onOffText = document.getElementById('onOff');
+  var onOffToggle = document.getElementById('onOffToggle');
   // Load
   self.on('message', function(message) {
     switch (message.method) {
@@ -7,7 +9,8 @@
         sitelist.value = message.value;
         break;
       case 'togglePlugin':
-        document.getElementById('onOff').innerHTML = message.value;
+        onOffText.innerHTML = message.value;
+        onOffToggle.checked = (message.value === 'ON');
         break;
     }
   });
@@ -17,7 +20,7 @@
   var undoButton = document.getElementById('undo');
 
   // Handle Checkbox
-  document.getElementById('onOffToggle').onchange = function() {
+  onOffToggle.onchange = function() {
     var value = '';
     self.postMessage({
       'method': 'togglePlugin',
