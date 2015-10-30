@@ -56,14 +56,32 @@ var { ToggleButton } = require('sdk/ui/button/toggle');
 var panels = require("sdk/panel");
 var self = require("sdk/self");
 
+
+// Setup the button
+var getPluginIcon = function(state) {
+  if (state === 'ON') {
+    return {
+      "16": "./focus-16.png",
+      "32": "./focus-32.png",
+      "64": "./focus-64.png"
+    }
+  } else {
+    return {
+      "16": "./rest-16.png",
+      "32": "./rest-32.png",
+      "64": "./rest-64.png"
+    }
+  }
+}
+
+var setPluginIcon = function(pluginState) {
+  button.icon = getPluginIcon(pluginState);
+}
+
 var button = ToggleButton({
   id: "my-button",
   label: "my button",
-  icon: {
-    "16": "./focus-16.png",
-    "32": "./focus-32.png",
-    "64": "./focus-64.png"
-  },
+  icon: getPluginIcon(pluginState),
   onChange: function(state) {
     if (state.checked) {
       panel.show({
@@ -72,6 +90,7 @@ var button = ToggleButton({
     }
   }
 });
+
 
 // Panel Interaction
 var panel = panels.Panel({
@@ -86,7 +105,7 @@ var panel = panels.Panel({
     });
     panel.postMessage({
       'method': 'togglePlugin',
-      'value': ss.storage.pluginState || 'ON'
+      'value': pluginState
     });
   },
   onHide: function() {
@@ -107,6 +126,7 @@ var panel = panels.Panel({
         break;
       case 'togglePlugin':
         pluginState = (message.value === true) ? 'ON' : 'OFF';
+        setPluginIcon(pluginState);
         ss.storage.pluginState = pluginState;
         panel.postMessage({
           'method': 'togglePlugin',
