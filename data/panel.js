@@ -9,10 +9,8 @@
         sitelist.value = message.value;
         break;
       case 'togglePlugin':
-        if ((message.value == 'ON') || (message.value == 'OFF')) {
-          onOffText.innerHTML = message.value;
-          onOffToggle.checked = (message.value === 'ON');
-        }
+        onOffText.innerHTML = (message.value === 'ON') ? 'ON' : 'OFF';
+        onOffToggle.checked = (message.value === 'ON');
         break;
     }
   });

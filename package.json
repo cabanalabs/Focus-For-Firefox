@@ -1,7 +1,7 @@
 {
   "title": "Focus by Cabana Labs",
   "name": "focus",
-  "version": "0.0.2",
+  "version": "0.0.4",
   "description": "Focus breaks bad habits by taking you to a beautiful page whenever you type in your favorite distracting websites.",
   "main": "index.js",
   "author": "Cabana Labs",

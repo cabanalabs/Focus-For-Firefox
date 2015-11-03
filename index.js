@@ -8,7 +8,7 @@ var ss = require("sdk/simple-storage");
 var pluginState = ss.storage.pluginState || 'ON';
 var reloadBlockList = function() {
   rawBlockList = (ss.storage.rawBlockList || '')
-  blockList = rawBlockList.replace(/^#.*\n$/g, "").split("\n");
+  blockList = rawBlockList.toLowerCase().replace(/^#.*\n$/g, "").split("\n");
 }
 
 // Intercept and redirect requests here
@@ -19,10 +19,11 @@ var httpRequestObserver =
     // If referrer is null, that means this request was most likely triggered by the
     // user typing the url into the address bar and pressing enter
     if (pluginState == 'ON' && topic == "http-on-modify-request" && subject.nsIHttpChannel.referrer == null) {
+      var requestURL = subject.URI.spec.toLowerCase();
       // Load, and clean up blocklist
       for (var counter=0; counter < blockList.length; counter++) {
         var listItem = blockList[counter].trim();
-        if (listItem != '' && subject.URI.host.indexOf(listItem) > -1) {
+        if (listItem != '' && requestURL.indexOf(listItem) > -1) {
           var httpChannel = subject.QueryInterface(Ci.nsIHttpChannel);
           var gBrowser = utils.getMostRecentBrowserWindow().gBrowser;
           var domWin = httpChannel.notificationCallbacks.getInterface(Ci.nsIDOMWindow);
