@@ -2,14 +2,17 @@ var {Cc, Ci} = require("chrome");
 var utils = require('sdk/window/utils');
 var rawBlockList = '';
 var blockList = '';
+var preferences = require("sdk/simple-prefs").prefs; 
+var interval = false;
 
 // Load the blocklist
 var ss = require("sdk/simple-storage");
 var pluginState = ss.storage.pluginState || 'ON';
+var offTime = new Date();
 var reloadBlockList = function() {
   rawBlockList = (ss.storage.rawBlockList || '')
   blockList = rawBlockList.toLowerCase().replace(/^#.*\n$/g, "").split("\n");
-}
+};
 
 // Intercept and redirect requests here
 var httpRequestObserver =
@@ -18,7 +21,9 @@ var httpRequestObserver =
   {
     // If referrer is null, that means this request was most likely triggered by the
     // user typing the url into the address bar and pressing enter
-    if (pluginState == 'ON' && topic == "http-on-modify-request" && subject.nsIHttpChannel.referrer == null) {
+    if (pluginState == 'ON' && 
+        topic == "http-on-modify-request" && 
+        subject.nsIHttpChannel.referrer == null) {
       var requestURL = subject.URI.spec.toLowerCase();
       // Load, and clean up blocklist
       for (var counter=0; counter < blockList.length; counter++) {
@@ -92,6 +97,22 @@ var button = ToggleButton({
   }
 });
 
+// Toggle Plugin
+var togglePlugin = function(on) {
+  pluginState = (on === true) ? 'ON' : 'OFF';
+  if (pluginState === 'OFF') {
+    offTime = new Date();
+    setOfficeHoursChecker();
+  } else {
+    clearInterval(interval);
+  }
+  setPluginIcon(pluginState);
+  ss.storage.pluginState = pluginState;
+  panel.postMessage({
+    'method': 'togglePlugin',
+    'value': pluginState
+  });
+};
 
 // Panel Interaction
 var panel = panels.Panel({
@@ -126,40 +147,79 @@ var panel = panels.Panel({
         });
         break;
       case 'togglePlugin':
-        pluginState = (message.value === true) ? 'ON' : 'OFF';
-        setPluginIcon(pluginState);
-        ss.storage.pluginState = pluginState;
-        panel.postMessage({
-          'method': 'togglePlugin',
-          'value': pluginState
-        });
+        togglePlugin(message.value);
         break;
     }
   }
 });
 
+// Load Preferences
+var reloadPreferences = function() {
+  preferences = require("sdk/simple-prefs").prefs; 
+};
+
+var padZero = function(num) {
+  var retval = ''+num;
+  if (num < 10) {
+    retval = "0"+num;
+  }
+  return retval;
+}
+
+// Office Hours
+var { setInterval, clearInterval } = require("sdk/timers");
+var setOfficeHoursChecker = function() {
+  // Check every 60 seconds
+  if (pluginState === 'OFF') {
+    interval = setInterval(function() {
+      // If in office hours -- if office hours is turned on,
+      var rightNow = new Date();
+      var currentTime = padZero(rightNow.getHours())+":"+padZero(rightNow.getMinutes());
+      var startTime = preferences.officeHoursStartTime;
+      var stopTime = preferences.officeHoursStopTime;
+      var today = rightNow.getDay();
+      var startDay = today;
+      var inOfficeHours = false;
+      // if you are between start and end - then good
+      // if you are greater than start and end; but start > end; then good
+      // if you are less than start and end; but start > end; then good
+      if (((currentTime > startTime) && (currentTime < stopTime)) ||  
+         ((currentTime > startTime) && (currentTime > stopTime) && (startTime > stopTime)) || 
+         ((currentTime < startTime) && (currentTime < stopTime) && (startTime > stopTime))) {
+        startDay = ((today - 1) >= 0) ? (today - 1) : 6;
+        inOfficeHours = true;
+      }
+      
+      if ((preferences.officeHours === true) &&
+         (preferences['workDay['+startDay+']'] === true) &&
+         (inOfficeHours === true) &&
+         ((rightNow.getTime() - offTime.getTime())/1000 > 420)) {
+        togglePlugin(true);     
+      }
+    }, 30000);
+  }
+};
+
 // Start here
 exports.main = function(options, callbacks) {
+  reloadPreferences();
+  require("sdk/simple-prefs").on("", reloadPreferences);
   reloadBlockList();
   httpRequestObserver.register();
+  setOfficeHoursChecker();
 }
 
 // Unload upon upgrade / plugin being disabled etc.
 exports.onUnload = function(reason) {
   httpRequestObserver.unregister(); 
+  require("sdk/simple-prefs").removeListener("", reloadPreferences);
+  clearInterval(interval);
 }
 
 /*
 TODO:
   Browser Plugin:
-    - Use the plugin the load remote images and produce the whole page locally?
-    - Setup an on / off listener for:
-      https://developer.mozilla.org/en-US/Add-ons/SDK/High-Level_APIs/simple-prefs#on%28prefName_listener%29
-    - Display browser plugin according to state
-    - Respond to state changes in the browser
-    - When the panel loads, get the current settings for
-      the current page / as well as plugin state
-    
+    - Turn OfficeHours into it's own module
     - Redirect to focus.cabanalabs.com/focus
     - Opt in for Private Browsing in addon settings
     - Always make sure that whatever wallpaper you get, it is appropriate for most sizes.
@@ -176,14 +236,6 @@ TODO:
     - Setup focus.cabanalabs.com/shot-of-the-day
 
   Website:
-    - Add a link to focus.cabanalabs.com on the front page
     - Give credit to flaticon for the icons:
       <div>Icon made by <a href="http://www.freepik.com" title="Freepik">Freepik</a> from <a href="http://www.flaticon.com" title="Flaticon">www.flaticon.com</a> is licensed under <a href="http://creativecommons.org/licenses/by/3.0/" title="Creative Commons BY 3.0">CC BY 3.0</a></div>
-
-
- == MVP Profile ==
-- Go to a website, be able to block it, edit it's entry, unblock it, pause block
-- Edit list of blocked websites
-- Show motivational quote - maybe get a database of 200 quotes
-- Show the current awesome picture of focus.cabanalabs.com
 */

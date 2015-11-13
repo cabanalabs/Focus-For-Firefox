@@ -1,7 +1,7 @@
 {
   "title": "Focus by Cabana Labs",
   "name": "focus",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "Focus breaks bad habits by taking you to a beautiful page whenever you type in your favorite distracting websites.",
   "main": "index.js",
   "author": "Cabana Labs",
@@ -9,5 +9,67 @@
     "firefox": ">=38.0a1",
     "fennec": ">=38.0a1"
   },
-  "license": "MIT"
+  "preferences": [{
+      "name": "officeHours",
+      "type": "bool",
+      "title": "Set office hours?",
+      "description": "Turning on office hours will let you limit your breaks to at most 10 minutes each time you switch the plugin Off during office hours.",
+      "value": false
+    }, {
+      "name": "officeHoursStartTime",
+      "type": "string",
+      "title": "Office hours start time",
+      "description": "Set start time between 00:00 and 23:59",
+      "value": "09:30"
+    }, {
+      "name": "officeHoursStopTime",
+      "type": "string",
+      "title": "Office hours end time",
+      "description": "Set stop time between 00:00 and 23:59",
+      "value": "17:30"
+    }, {
+      "name": "workDay[1]",
+      "type": "bool",
+      "title": "Monday is a Work Day",
+      "description": "Turn on office hours for Monday",
+      "value": false
+    }, {
+      "name": "workDay[2]",
+      "type": "bool",
+      "title": "Tuesday is a Work Day",
+      "description": "Turn on office hours for Tuesday",
+      "value": false
+    }, {
+      "name": "workDay[3]",
+      "type": "bool",
+      "title": "Wednesday is a Work Day",
+      "description": "Turn on office hours for Wednesday",
+      "value": false
+    }, {
+      "name": "workDay[4]",
+      "type": "bool",
+      "title": "Thursday is a Work Day",
+      "description": "Turn on office hours for Thursday",
+      "value": false
+    }, {
+      "name": "workDay[5]",
+      "type": "bool",
+      "title": "Friday is a Work Day",
+      "description": "Turn on office hours for Friday",
+      "value": false
+    }, {
+      "name": "workDay[6]",
+      "type": "bool",
+      "title": "Saturday is a Work Day",
+      "description": "Turn on office hours for Saturday",
+      "value": false
+    }, {
+      "name": "workDay[0]",
+      "type": "bool",
+      "title": "Sunday is a Work Day",
+      "description": "Turn on office hours for Sunday",
+      "value": false
+    }
+  ],
+  "license": "Apache License, Version 2.0"
 }
