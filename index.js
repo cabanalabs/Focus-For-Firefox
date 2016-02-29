@@ -3,6 +3,7 @@ var utils = require('sdk/window/utils');
 var rawBlockList = '';
 var blockList = '';
 var preferences = require("sdk/simple-prefs").prefs; 
+var defaultWebsite = 'http://focus.cabanalabs.com';
 var interval = false;
 
 // Load the blocklist
@@ -34,7 +35,7 @@ var httpRequestObserver =
           var domWin = httpChannel.notificationCallbacks.getInterface(Ci.nsIDOMWindow);
           var browser = gBrowser.getBrowserForDocument(domWin.top.document);
           // Very important to pass the string and *not* the URI object
-          browser.loadURI('http://focus.cabanalabs.com/', null, null);
+          browser.loadURI(defaultWebsite, null, null);
           return true;
         }
       }
@@ -156,6 +157,8 @@ var panel = panels.Panel({
 // Load Preferences
 var reloadPreferences = function() {
   preferences = require("sdk/simple-prefs").prefs; 
+  defaultWebsite = preferences.defaultWebsite.trim();
+  defaultWebsite = (defaultWebsite == '') ? 'http://focus.cabanalabs.com/' : defaultWebsite;
 };
 
 var padZero = function(num) {

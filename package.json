@@ -1,7 +1,7 @@
 {
   "title": "Focus by Cabana Labs",
   "name": "focus",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "description": "Focus breaks bad habits by taking you to a beautiful page whenever you type in your favorite distracting websites.",
   "main": "index.js",
   "author": "Cabana Labs",
@@ -10,10 +10,16 @@
     "fennec": ">=38.0a1"
   },
   "preferences": [{
+      "name": "defaultWebsite",
+      "type": "string",
+      "title": "Default Webpage",
+      "description": "Focus will redirect to this page whenever you try to visit a blocked website.",
+      "value": "http://focus.cabanalabs.com/"
+    }, {
       "name": "officeHours",
       "type": "bool",
       "title": "Set office hours?",
-      "description": "Turning on office hours will let you limit your breaks to at most 10 minutes each time you switch the plugin Off during office hours.",
+      "description": "Turning on office hours will let you limit your breaks to around 7 minutes each time you switch the plugin Off during office hours.",
       "value": false
     }, {
       "name": "officeHoursStartTime",
